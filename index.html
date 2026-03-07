@@ -1270,16 +1270,20 @@ i3xag-server \
           <div class="terminal-bar"><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-dot"></span><span class="terminal-title">i3xrag</span></div>
           <div class="terminal-body"><span class="dim">i3xrag v1.0.0</span>
 <span class="ok">MCP server ready (stdio)</span>
-<span class="dim">Search tools:</span>
+<span class="dim">Search:</span>
   <span class="info">search</span>              <span class="dim">Natural language BM25 search</span>
   <span class="info">search_by_type</span>      <span class="dim">Search within an object type</span>
-<span class="dim">Graph tools:</span>
+  <span class="info">search_related</span>      <span class="dim">Search + auto-traverse results</span>
+<span class="dim">Graph:</span>
   <span class="info">traverse</span>            <span class="dim">Walk N hops from a node</span>
-  <span class="info">find_path</span>           <span class="dim">Shortest path between two nodes</span>
+  <span class="info">find_path</span>           <span class="dim">Shortest path between nodes</span>
   <span class="info">neighborhood</span>        <span class="dim">All nodes within N hops</span>
-  <span class="info">subtree_summary</span>     <span class="dim">Count types under a parent</span>
-  <span class="info">ancestors</span>           <span class="dim">Walk up hierarchy to root</span>
-  <span class="info">aggregate</span>           <span class="dim">Group by type or parent</span>
+  <span class="info">composition_tree</span>    <span class="dim">Nested hierarchy under a node</span>
+<span class="dim">Analysis:</span>
+  <span class="info">relationship_map</span>    <span class="dim">Type-level connection map</span>
+  <span class="info">type_schema</span>         <span class="dim">Analyze a type in practice</span>
+  <span class="info">value_filter</span>        <span class="dim">Filter by quality/range/missing</span>
+  <span class="info">stale_values</span>        <span class="dim">Find outdated values</span>
 
 <span class="dim">Agent calls connect_and_index...</span>
 <span class="dim">Crawling object model...</span>
@@ -1294,12 +1298,12 @@ i3xag-server \
     <section class="section">
       <div class="features-header reveal"><div class="section-label">Capabilities</div><h2 class="section-title">Search, traverse, analyze</h2><p class="section-desc">Let AI agents find objects by meaning and explore them by structure.</p></div>
       <div class="feature-list reveal">
-        <div class="feature-item" data-num="01"><h3>BM25 Search</h3><p>Industry-standard ranking algorithm. Search by display name, type, namespace, or any combination of natural language terms.</p></div>
-        <div class="feature-item" data-num="02"><h3>In-Memory Graph</h3><p>Every object, composition, and relationship stored as a traversable graph. Walk edges, find paths, explore neighborhoods.</p></div>
-        <div class="feature-item" data-num="03"><h3>Graph Traversal</h3><p>Walk N hops from any node, filtered by edge type or node type. Find shortest paths between objects. Explore full neighborhoods.</p></div>
-        <div class="feature-item" data-num="04"><h3>Structural Analysis</h3><p>Count objects by type under a subtree. Walk ancestor chains to the root. Aggregate across the entire model by type or parent.</p></div>
-        <div class="feature-item" data-num="05"><h3>Full Model Crawl</h3><p>Automatically discovers and indexes every namespace, type, object, relationship, and value. Both indexes built from a single crawl.</p></div>
-        <div class="feature-item" data-num="06"><h3>Live Data Access</h3><p>After finding objects via search or traversal, read their live values, quality, and relationships through the same MCP server.</p></div>
+        <div class="feature-item" data-num="01"><h3>Search + Traverse</h3><p>BM25 text search finds objects by meaning. Graph traversal follows connections. Combined mode does both in one call &mdash; search, then auto-traverse each result.</p></div>
+        <div class="feature-item" data-num="02"><h3>In-Memory Graph</h3><p>Every object, composition, and relationship stored as a traversable graph. Walk edges, find shortest paths, explore neighborhoods, get full composition trees.</p></div>
+        <div class="feature-item" data-num="03"><h3>Value Queries</h3><p>Filter objects by quality (Good/Bad), numeric range, or missing values. Find stale data older than N seconds. Operational queries across the whole model.</p></div>
+        <div class="feature-item" data-num="04"><h3>Schema Analysis</h3><p>Relationship map shows how types connect at a schema level. Type schema reveals child patterns, relationship usage, and value quality distribution per type.</p></div>
+        <div class="feature-item" data-num="05"><h3>Structural Analysis</h3><p>Composition trees, ancestor chains, subtree summaries, and aggregation by type or parent. Understand hierarchy without browsing object by object.</p></div>
+        <div class="feature-item" data-num="06"><h3>Single Crawl, All Indexes</h3><p>One crawl builds both the BM25 search index and the graph database. No extra configuration, no separate infrastructure. 18 MCP tools from one connection.</p></div>
       </div>
     </section>
     <div class="concept-break reveal"><div class="concept-break-inner"><img src="i3xrag_image.png" alt="i3xrag concept"><div class="concept-overlay"><div class="section-label">The Concept</div><h3>Search finds the needle. Graph explains the haystack.</h3><p>BM25 finds objects by meaning. The graph reveals how they connect &mdash; traversals, paths, subtrees, and aggregations from a single crawl.</p></div></div></div>
@@ -1311,7 +1315,7 @@ i3xag-server \
         <div class="pipe-arrow"><svg width="32" height="16" viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="0" y1="8" x2="28" y2="8"/><polyline points="22,2 28,8 22,14"/></svg></div>
         <div class="pipe-step"><div class="pipe-num">02</div><h3>index</h3><p>The AI agent calls connect_and_index with a server URL. i3xrag crawls the full model and builds a BM25 search index and graph database.</p></div>
         <div class="pipe-arrow"><svg width="32" height="16" viewBox="0 0 32 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="0" y1="8" x2="28" y2="8"/><polyline points="22,2 28,8 22,14"/></svg></div>
-        <div class="pipe-step"><div class="pipe-num">03</div><h3>search</h3><p>Ask questions in natural language. Get ranked results. Read live values from the matches.</p></div>
+        <div class="pipe-step"><div class="pipe-num">03</div><h3>query</h3><p>Search by meaning, traverse by structure, filter by value, analyze by type. 18 MCP tools for any question about the model.</p></div>
       </div>
     </section>
     <div class="config-section reveal">
