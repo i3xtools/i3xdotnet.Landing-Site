@@ -738,6 +738,29 @@
     }
     .i3xdev-banner a.i3xdev-link:hover { background: #0284c7; }
 
+    /* ── SPEC BUTTON ON CARDS ── */
+    .tool-spec-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.75rem;
+      padding: 0.3rem 0.7rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--amber);
+      background: rgba(210, 153, 34, 0.08);
+      border: 1px solid rgba(210, 153, 34, 0.2);
+      border-radius: 100px;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      position: relative;
+      z-index: 2;
+    }
+    .tool-spec-btn:hover { background: rgba(210, 153, 34, 0.16); border-color: rgba(210, 153, 34, 0.4); color: #f0c040; }
+    .tool-spec-btn svg { flex-shrink: 0; }
+
     /* ── FOOTER ── */
     footer {
       position: relative;
@@ -821,6 +844,7 @@
           <div class="tool-badge badge-mt">MTConnect</div>
           <h2>i3xmt</h2>
           <p>Connect to MTConnect MQTT brokers and transform device data into i3X context models with live values and a REST API.</p>
+          <span class="tool-spec-btn" onclick="event.preventDefault();event.stopPropagation();window.open('mtconnect-spec.html','_blank')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Companion Spec v0.0.2</span>
         </div>
       </a>
 
@@ -958,6 +982,9 @@
       <div class="hero-content">
         <h1>Your MTConnect Agent,<br>as an <em>i3X API</em></h1>
         <p class="hero-sub">Connect to an MQTT broker. Receive MTConnect device data in real time. Auto-generate an i3X context model. Serve a standards-compliant REST API.</p>
+        <div class="hero-actions" style="animation-delay:0.25s">
+          <a href="mtconnect-spec.html" target="_blank" class="btn btn-ghost"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:0.25rem"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Companion Spec v0.0.2</a>
+        </div>
       </div>
       <div class="hero-visual"><img src="i3xmt_screenshot.png" alt="i3xmt desktop application"></div>
       <p class="hero-caption">i3xmt connected to an MTConnect MQTT broker &mdash; device model with live i3X server</p>
@@ -1585,6 +1612,7 @@ i3xag-server \
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') closeDownloadModal();
     });
+
   </script>
 
 </body>

@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MTConnect to i3X Companion Specification v0.0.2</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #06080d;
+      --surface: #0d1117;
+      --surface-2: #151b27;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-accent: rgba(210, 153, 34, 0.2);
+      --text: #c9d1d9;
+      --text-dim: #6e7681;
+      --text-bright: #ecf2f8;
+      --accent: #00e0c4;
+      --amber: #d29922;
+      --blue: #58a6ff;
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+
+    body {
+      font-family: var(--font-display);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: 56px;
+      background: rgba(6, 8, 13, 0.88);
+      backdrop-filter: blur(16px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      gap: 1rem;
+    }
+    .topbar-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .topbar-back:hover { color: var(--text-bright); background: rgba(255,255,255,0.04); }
+    .topbar-title {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--amber);
+      letter-spacing: 0.02em;
+    }
+    .topbar-version {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      color: var(--text-dim);
+      padding: 0.2rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+    }
+
+    /* ── LAYOUT ── */
+    .spec-layout {
+      display: flex;
+      padding-top: 56px;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── SIDEBAR ── */
+    .spec-sidebar {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      bottom: 0;
+      width: 272px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 1.25rem 0 2rem;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.08) transparent;
+    }
+    .spec-sidebar::-webkit-scrollbar { width: 5px; }
+    .spec-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .spec-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+    .toc-section-label {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-dim);
+      padding: 0.75rem 1.25rem 0.5rem;
+    }
+
+    .spec-toc { list-style: none; }
+    .spec-toc li { margin: 0; }
+    .spec-toc a {
+      display: block;
+      padding: 0.3rem 1.25rem;
+      font-size: 0.8125rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.12s, background 0.12s;
+      line-height: 1.45;
+      border-right: 2px solid transparent;
+    }
+    .spec-toc a:hover { color: var(--text-bright); background: rgba(255,255,255,0.025); }
+    .spec-toc a.active { color: var(--amber); background: rgba(210, 153, 34, 0.05); border-right-color: var(--amber); }
+    .spec-toc .toc-sub { padding-left: 2.25rem; font-size: 0.75rem; }
+    .toc-divider { height: 1px; background: var(--border); margin: 0.625rem 1.25rem; }
+
+    /* ── CONTENT ── */
+    .spec-content {
+      margin-left: 272px;
+      flex: 1;
+      max-width: 840px;
+      padding: 2.5rem 3rem 6rem;
+    }
+
+    .spec-content h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--text-bright);
+      letter-spacing: -0.035em;
+      margin-bottom: 0.375rem;
+      line-height: 1.15;
+    }
+    .spec-meta {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--amber);
+      margin-bottom: 0.75rem;
+    }
+    .spec-changelog {
+      font-size: 0.8125rem;
+      color: var(--text-dim);
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+      padding-left: 1.25rem;
+    }
+    .spec-changelog li { margin-bottom: 0.25rem; }
+
+    .spec-content h2 {
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: -0.02em;
+      margin: 3rem 0 1rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .spec-content h3 {
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin: 2rem 0 0.75rem;
+    }
+    .spec-content h4 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 1.5rem 0 0.5rem;
+    }
+    .spec-content p {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.8;
+      margin-bottom: 1rem;
+    }
+    .spec-content strong { color: var(--text-bright); font-weight: 600; }
+    .spec-content em { font-style: italic; }
+    .spec-content ul, .spec-content ol {
+      margin: 0 0 1rem 1.5rem;
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.8;
+    }
+    .spec-content li { margin-bottom: 0.25rem; }
+
+    .spec-content blockquote {
+      border-left: 3px solid var(--amber);
+      background: rgba(210, 153, 34, 0.04);
+      padding: 0.75rem 1.25rem;
+      margin: 1rem 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .spec-content blockquote p { color: var(--text-dim); margin-bottom: 0; font-size: 0.85rem; }
+
+    .spec-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.8125rem;
+    }
+    .spec-content th {
+      text-align: left;
+      padding: 0.625rem 0.75rem;
+      background: var(--surface-2);
+      color: var(--text-bright);
+      font-weight: 600;
+      border: 1px solid var(--border);
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .spec-content td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    .spec-content tr:hover td { background: rgba(255,255,255,0.015); }
+
+    .spec-content code {
+      font-family: var(--font-mono);
+      font-size: 0.8em;
+      background: rgba(255,255,255,0.05);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+    .spec-content pre {
+      background: #0b0f18;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      line-height: 1.7;
+    }
+    .spec-content pre code {
+      background: none;
+      padding: 0;
+      color: var(--text-dim);
+      font-size: 0.8125rem;
+    }
+
+    /* ── FOOTER ── */
+    .spec-footer {
+      margin-left: 272px;
+      max-width: 840px;
+      padding: 2rem 3rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8125rem;
+      color: var(--text-dim);
+    }
+    .spec-footer a { color: var(--text); text-decoration: none; }
+    .spec-footer a:hover { color: var(--accent); }
+
+    @media (max-width: 768px) {
+      .spec-sidebar { display: none; }
+      .spec-content, .spec-footer { margin-left: 0; padding-left: 1.5rem; padding-right: 1.5rem; }
+      .spec-content h1 { font-size: 1.75rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a href="index.html#/i3xmt" class="topbar-back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg>
+      i3xmt
+    </a>
+    <span class="topbar-title">Companion Specification</span>
+    <span class="topbar-version">v0.0.2 Draft</span>
+  </div>
+
+  <div class="spec-layout">
+    <aside class="spec-sidebar">
+      <div class="toc-section-label">Specification</div>
+      <ul class="spec-toc" id="specToc">
+        <li><a href="#spec-s1">1. Scope</a></li>
+        <li><a href="#spec-s2">2. Goals</a></li>
+        <li><a href="#spec-s3">3. Normative References</a></li>
+        <li><a href="#spec-s4">4. Terms and Definitions</a></li>
+        <li><a href="#spec-s5">5. Architecture</a></li>
+        <li><a href="#spec-s6">6. Mapping to i3X</a></li>
+        <li><a href="#spec-s6-1" class="toc-sub">6.1 Object Representation</a></li>
+        <li><a href="#spec-s6-2" class="toc-sub">6.2 DisplayName Rules</a></li>
+        <li><a href="#spec-s6-3" class="toc-sub">6.3 Relationship Mapping</a></li>
+        <li><a href="#spec-s7">7. Streaming Data</a></li>
+        <li><a href="#spec-s7-1" class="toc-sub">7.1 VQT Translation</a></li>
+        <li><a href="#spec-s7-2" class="toc-sub">7.2 Quality Mapping</a></li>
+        <li><a href="#spec-s7-3" class="toc-sub">7.3 History</a></li>
+        <li><a href="#spec-s7-4" class="toc-sub">7.4 Composite Values</a></li>
+        <li><a href="#spec-s8">8. DataItem Mappings</a></li>
+        <li><a href="#spec-s8-1" class="toc-sub">8.1 Samples</a></li>
+        <li><a href="#spec-s8-2" class="toc-sub">8.2 Events</a></li>
+        <li><a href="#spec-s8-3" class="toc-sub">8.3 Conditions</a></li>
+        <li><a href="#spec-s9">9. Subscriptions</a></li>
+        <li><a href="#spec-s10">10. Best Practices</a></li>
+      </ul>
+      <div class="toc-divider"></div>
+      <div class="toc-section-label">Appendices</div>
+      <ul class="spec-toc">
+        <li><a href="#spec-appA">A. Relationship Registry</a></li>
+        <li><a href="#spec-appB">B. ElementId Format</a></li>
+        <li><a href="#spec-appC">C. DisplayName Examples</a></li>
+        <li><a href="#spec-appD">D. Decision Tree</a></li>
+      </ul>
+    </aside>
+
+    <div class="spec-content" id="specContent">
+      <!-- Rendered by JS from embedded markdown -->
+    </div>
+  </div>
+
+  <div class="spec-footer">
+    <p>The i3X standard is maintained by the <a href="https://i3x.dev" target="_blank">i3X Working Group at i3x.dev</a></p>
+  </div>
+
+  <script type="text/template" id="specMarkdown">
+# MTConnect to i3X Companion Specification
+
+**Version:** 0.0.2 (Draft)
+
+**Changelog from 0.0.1:**
+- Revised &sect;6.1.1 isComposition rules &mdash; introduced a two-tier model distinguishing structural (organizational) elements from data-bearing (compositional) elements
+- Revised &sect;6.2 DisplayName rules &mdash; changed duplicate detection scope from global to sibling-level; retained vendor namespace prefixes
+- Added &sect;7.3.1 History Implementation Guidance &mdash; explicit treatment of MTConnect sequence-to-timestamp translation
+- Various editorial clarifications
+
+## 1. Scope
+
+This specification defines the interoperability and mapping rules between the MTConnect standard and the Industrial Information Interface eXchange (i3X) API. It specifies how MTConnect semantic data models (Devices, Components, Compositions, DataItems, and Assets) are exposed through i3X RESTful JSON endpoints to enable seamless application portability.
+
+## 2. Goals of the Companion Specification
+
+- **Commoditize Data Access:** Standardize how applications access manufacturing data regardless of the underlying MTConnect Agent or i3X platform.
+- **Enable Application Portability:** Allow applications written against the i3X API to consume MTConnect data without custom vendor integrations.
+- **Harmonization:** Provide a clear architectural mapping from MTConnect's XML/HTTP architecture to i3X's JSON/REST/SSE architecture.
+
+## 3. Normative References
+
+- **MTConnect:** Part 1.0 (Fundamentals), Part 2.0 (Device Information Model), Part 3.0 (Observation Information Model), Part 4.0 (Asset Information Model), and Part 5.0 (Interfaces).
+- **i3X:** Request for Comments (RFC) 001 &mdash; Common API for Industrial Information Interface eXchange.
+- **i3X SDK:** Server Developer Guide &mdash; Data Models (&sect;02-data-models).
+
+## 4. Terms and Definitions
+
+| Term | Definition |
+|------|-----------|
+| **i3X Address Space** | The complete collection of Relationship Types, Object Types, and Object Instances persisted in the i3X platform. |
+| **ElementId** | A platform-specific, persistent, and unique string key for an i3X Element. |
+| **MTConnect Agent** | Software that collects data published from equipment, organizes it, and responds to requests with structured semantic data. |
+| **Device** | The top-level MTConnect component representing a piece of equipment. |
+| **Component** | A logical or physical sub-unit of a Device (e.g., Axes, Controller, Linear axis). |
+| **Composition** | A lowest-level building block contained within a Component (e.g., a motor, spindle). |
+| **DataItem** | A telemetry point, state, or condition reported by a Component or Composition. |
+| **VQT** | Value-Quality-Timestamp &mdash; the standard envelope for all i3X data values. |
+| **Condition Branch** | A simultaneously active fault or warning identified by a unique `nativeCode`. |
+
+## 5. Architecture and System Context
+
+In an integrated environment, an i3X Server acts as an abstraction layer above one or more MTConnect Agents. The i3X platform unifies the namespace and maps MTConnect's internal XML data structures to the i3X JSON object model in a type-safe fashion, allowing applications to query MTConnect data using i3X RESTful methods (`GET`, `POST`, `PUT`) or Server-Sent Event (SSE) subscriptions.
+
+```
++---------------+     +---------------+     +---------------+
+|  i3X Client   |---->|  i3X Server   |---->|  MTConnect    |
+|  (Explorer,   |<----|  (Companion)  |<----|  Agent        |
+|   i3xview)    | REST|               |MQTT |               |
++---------------+ /SSE+---------------+     +---------------+
+```
+
+## 6. Mapping the MTConnect Information Model to i3X
+
+The MTConnect information model is represented in the i3X Address Space as a set of Object Instances, Object Types, and Relationships. The i3X model separates the semantic metadata (the Object and its attributes) from the time-series values (Value, Quality, Timestamp).
+
+### 6.1 Object Representation
+
+Every MTConnect element (Device, Component, Composition, DataItem) translates into an i3X Object Instance.
+
+Each i3X Object Instance MUST include the following required metadata:
+
+| Field | Mapping Rule |
+|-------|-------------|
+| `elementId` | Derived from the MTConnect `id` attribute, prefixed with the Device `uuid` for global uniqueness: `"{device_uuid}:{mtconnect_id}"`. The root Device object uses `"{device_uuid}"` without a suffix. |
+| `displayName` | Derived using the naming conventions defined in &sect;6.2. |
+| `typeId` | The `elementId` of the registered i3X ObjectType that defines this class. Each specific MTConnect type maps to a dedicated i3X ObjectType (e.g., `POSITION` &rarr; `PositionType`, `EXECUTION` &rarr; `ExecutionType`). |
+| `namespaceUri` | The MTConnect namespace URI (e.g., `urn:mtconnect.org:MTConnectDevices:2.0`). |
+| `parentId` | The `elementId` of the parent object. Root objects (Device) MUST use `"/"` as the sentinel value. |
+| `isComposition` | A boolean flag. See &sect;6.1.1 for rules. |
+
+#### 6.1.1 isComposition Rules
+
+The i3X RFC (&sect;3.2) distinguishes two kinds of hierarchical relationships:
+
+- **Organizational** (`HasChildren`/`HasParent`): topological hierarchy where child objects are *separate entities* organized under a parent.
+- **Compositional** (`HasComponent`/`ComponentOf`): data composition where child data IS part of the parent's value definition.
+
+This distinction has direct operational impact. When a client queries a compositional element with `maxDepth=0`, the server recurses through all `HasComponent` relationships and returns every descendant's VQT data in a single nested payload. Setting the entire MTConnect tree to `isComposition: true` would force a `maxDepth=0` query on the root Device to return every telemetry point across the entire machine tool &mdash; potentially thousands of DataItems &mdash; in one response, causing severe performance problems and defeating the purpose of incremental exploration.
+
+The MTConnect model contains two distinct structural patterns:
+
+1. **Structural containers** &mdash; grouping elements (Axes, Systems, Auxiliaries, Resources, Structures, Controller) that organize the equipment topology. These elements carry no DataItems of their own and exist to provide navigational structure.
+2. **Data-bearing elements** &mdash; Components, Compositions, and DataItems that carry or produce telemetry data. A DataItem's value is inherently part of its parent Component's data definition.
+
+**Rules:**
+
+| Element | isComposition | Relationship to parent | Rationale |
+|---------|--------------|----------------------|-----------|
+| Root Device | `false` | N/A (root, `parentId="/"`) | Device is a top-level entry point, not composed data |
+| Grouping containers (Axes, Systems, Auxiliaries, Resources, Structures) | `false` | `HasChildren` / `HasParent` | Organizational topology &mdash; these group children but carry no data of their own |
+| Data-bearing Components (Linear, Rotary, Path, etc.) | `true` | `HasComponent` / `ComponentOf` | Their DataItems compose the Component's value |
+| MTConnect Compositions (Motor, Spindle, etc.) | `true` | `HasComponent` / `ComponentOf` | Lowest-level data-bearing parts of a Component |
+| DataItems | `true` | `HasComponent` / `ComponentOf` | A DataItem's value IS part of its parent's composite value |
+
+> **Design rationale:** This two-tier model allows clients to traverse the equipment topology using `HasChildren` without triggering data recursion, then drill into specific data-bearing Components via `HasComponent` with `maxDepth` to retrieve their composed values. A `maxDepth=0` query on a Linear axis returns its position, load, and condition data &mdash; a manageable payload. A client that truly needs the entire machine's data can still walk the tree programmatically.
+
+#### 6.1.2 ObjectType Registration
+
+ObjectTypes MUST be registered per MTConnect type, not per category. Each unique MTConnect `type` attribute produces one i3X ObjectType.
+
+| MTConnect | i3X ObjectType | Example elementId |
+|-----------|---------------|-------------------|
+| Device | DeviceType | `DeviceType` |
+| Component (by type) | `{ComponentType}` | `Axes`, `Controller`, `LinearAxis` |
+| DataItem (by type) | `{PascalCaseType}Type` | `PositionType`, `ExecutionType`, `SystemType` |
+
+The ObjectType `schema` field is REQUIRED (per i3X SDK &sect;02-data-models). For Component types, use an empty object schema. For DataItem types, the schema type reflects the category:
+
+| Category | JSON Schema type |
+|----------|-----------------|
+| SAMPLE | `"number"` |
+| EVENT | `"string"` (or `"number"` for numeric events) |
+| CONDITION | `"string"` |
+
+### 6.2 DisplayName Rules
+
+Display names provide human-readable labels for i3X objects. When multiple sibling objects (children of the same parent) share the same base display name, disambiguation brackets MUST be appended.
+
+#### 6.2.1 Component displayName
+
+The base display name is the MTConnect component type (the XML element QName).
+
+**Bracket rule:** If there are multiple sibling components of the same type under the same parent, or if the component is a `Linear` or `Rotary` axis, the MTConnect `name` attribute MUST be appended in square brackets.
+
+**Fallback:** If the `name` attribute equals the component type (i.e., no real name was provided in the MTConnect XML), the component `id` MUST be used instead.
+
+| MTConnect XML | displayName |
+|---------------|-------------|
+| `<Linear id="Lx1" name="X">` | `Linear[X]` |
+| `<Rotary id="Lc1" name="C1">` | `Rotary[C1]` |
+| `<Structure id="x_axis">` (no name) | `Structure[x_axis]` |
+| `<Controller id="Lct1" name="controller">` (unique type) | `Controller` |
+
+#### 6.2.2 DataItem displayName
+
+The base display name is constructed by concatenating the `subType` (if any) and `type` in PascalCase, with the subType first: `{SubType}{Type}`.
+
+**Vendor namespace prefixes:** MTConnect subTypes may carry vendor namespace prefixes (e.g., `x:TOTAL_OPERATING_TIME`). Vendor prefixes MUST be retained and converted to a safe format: strip the colon and prefix with `X_` in the PascalCase result. For example, `x:TOTAL_OPERATING_TIME` becomes `X_TotalOperatingTimeAccumulatedTime`.
+
+> **Rationale:** Stripping vendor prefixes risks name collisions when two different vendors use the same base name for entirely different proprietary extensions. Retaining the prefix preserves provenance and uniqueness.
+
+**Bracket rule:** If multiple sibling DataItems (under the same parent Component) produce the same base display name, the MTConnect `name` attribute MUST be appended in square brackets. If the name equals the base display name (or is empty), the DataItem `id` MUST be used instead.
+
+| MTConnect DataItem | displayName |
+|-------------------|-------------|
+| `type="POSITION" subType="ACTUAL"` (unique under parent) | `ActualPosition` |
+| `type="LOAD"` (duplicate under same parent, name="YS1load") | `Load[YS1load]` |
+| `type="SYSTEM" category="CONDITION"` (name="LoaderSystem1_cond") | `System[LoaderSystem1_cond]` |
+| `type="ACCUMULATED_TIME" subType="x:TOTAL_OPERATING_TIME"` | `X_TotalOperatingTimeAccumulatedTime` |
+
+> **Note (change from 0.0.1):** Duplicate detection scope has been narrowed from global (entire model) to sibling-level (children of the same parent). This avoids the need for global re-indexing when devices are added or reconfigured, and aligns with hierarchical browsing patterns where parent context is always available.
+
+### 6.3 Relationship Mapping
+
+The MTConnect information model uses structural and semantic relationships to organize equipment data. i3X supports Compositional, Organizational, and Non-Hierarchical relationship categories.
+
+Implementers MUST use exact literal relationship type strings and MUST NOT parameterize them with type names (e.g., do not use `HasChildren_LinearAxis`).
+
+#### 6.3.1 Structural Relationships
+
+The MTConnect device tree uses two relationship types depending on whether the **parent** is organizational or compositional (see &sect;6.1.1):
+
+| Relationship | Direction | Usage |
+|-------------|-----------|-------|
+| `HasChildren` | Parent &rarr; Child | Any parent with `isComposition: false` &rarr; its children |
+| `HasParent` | Child &rarr; Parent | Inverse of HasChildren |
+| `HasComponent` | Parent &rarr; Child | Any parent with `isComposition: true` &rarr; its children |
+| `ComponentOf` | Child &rarr; Parent | Inverse of HasComponent |
+
+**Determination rule:** The relationship type is determined solely by the **parent's** `isComposition` flag. If the parent has `isComposition: true`, the relationship to its children is `HasComponent`/`ComponentOf`. If the parent has `isComposition: false`, the relationship is `HasChildren`/`HasParent`.
+
+> **Key implication:** A data-bearing component like `Linear[X]` has `isComposition: true`, but its relationship **to its parent** `Axes` is `HasParent` (not `ComponentOf`) because `Axes` has `isComposition: false`. The same `Linear[X]` acts as a compositional parent to its own DataItems, so its relationship **to its children** is `HasComponent`.
+
+**Example:**
+
+```
+Device (isComposition: false)
+ +-- HasChildren --> Axes (isComposition: false)
+ |   +-- HasChildren --> Linear[X] (isComposition: true)
+ |   |   +-- HasComponent --> ActualPosition (isComposition: true)
+ |   |   +-- HasComponent --> Load (isComposition: true)
+ |   |   +-- HasComponent --> System (isComposition: true)
+ |   +-- HasChildren --> Linear[Z1] (isComposition: true)
+ |   +-- HasChildren --> Rotary[B] (isComposition: true)
+ +-- HasChildren --> Systems (isComposition: false)
+     +-- HasChildren --> Electric (isComposition: true)
+         +-- HasComponent --> PowerState (isComposition: true)
+```
+
+The `parentId` field on each child object MUST be populated with the `elementId` of its parent regardless of relationship type.
+
+#### 6.3.2 Non-Hierarchical (Graph) Reference Mappings
+
+MTConnect defines mechanisms for associating data without duplicating it, representing complex graph relationships across equipment.
+
+**Standard References:**
+
+| MTConnect | i3X Forward | i3X Inverse |
+|-----------|------------|-------------|
+| `ComponentRef` | `HasComponentRef` | `ComponentRefOf` |
+| `DataItemRef` | `HasDataItemRef` | `DataItemRefOf` |
+
+**Configuration Relationships:**
+
+| MTConnect | i3X Forward | i3X Inverse |
+|-----------|------------|-------------|
+| `DeviceRelationship` | `HasDeviceRelationship` | `DeviceRelationshipOf` |
+| `ComponentRelationship` | `HasComponentRelationship` | `ComponentRelationshipOf` |
+| `AssetRelationship` | `HasAsset` | `AssetOf` |
+| `ComponentRelationship` (type=PARENT) | `PARENT` | `CHILD` |
+| `ComponentRelationship` (type=CHILD) | `CHILD` | `PARENT` |
+
+**Source Relationships:**
+
+| MTConnect | i3X Forward | i3X Inverse |
+|-----------|------------|-------------|
+| `Source` element | `HasSource` | `SourceOf` |
+
+#### 6.3.3 Kinematic Relationships (Derived)
+
+When MTConnect Configuration includes `PARENT`/`CHILD` relationships pointing to `Structure` elements, implementations MAY derive higher-level kinematic relationships:
+
+| Derived Relationship | Meaning |
+|---------------------|---------|
+| `MountedOn` | A rotary axis is physically mounted on (carried by) a linear axis |
+| `Supports` | A linear axis supports (carries) a rotary axis (inverse of MountedOn) |
+
+## 7. Mapping MTConnect Streaming Data to i3X Value Methods
+
+MTConnect Observations (the actual data values) are mapped to the i3X Value-Quality-Timestamp (VQT) structure.
+
+### 7.1 VQT Translation
+
+| VQT Field | Mapping Rule |
+|-----------|-------------|
+| `value` | The MTConnect observation value, coerced to the appropriate JSON type (see &sect;8). |
+| `quality` | See &sect;7.2 for quality mapping rules. |
+| `timestamp` | The MTConnect ISO 8601 timestamp, mapped to RFC 3339 format. |
+
+### 7.2 Quality Mapping
+
+MTConnect does not have an explicit quality concept; quality is inferred from the observation state:
+
+| MTConnect State | i3X Quality |
+|----------------|-------------|
+| Valid observation (non-UNAVAILABLE) | `"Good"` |
+| `UNAVAILABLE` (first occurrence, no prior good value) | `"Bad"` |
+| `UNAVAILABLE` (had a prior good value) | `"Uncertain"` |
+
+### 7.3 Data Retrieval and History
+
+- **Current Values:** An MTConnect `current` request translates to the i3X `POST /objects/value` endpoint.
+- **Historical Values:** An MTConnect `sample` request is fulfilled by the i3X `POST /objects/history` endpoint, with `startTime` and `endTime` filters.
+- **History Storage:** Implementations MAY use in-memory ring buffers or on-disk databases (e.g., SQLite) for historical data.
+
+#### 7.3.1 History Implementation Guidance: Sequence-to-Timestamp Translation
+
+MTConnect's native historical data architecture uses sequence numbers (`from`, `count`, `to` parameters). The i3X API uses RFC 3339 timestamps (`startTime`, `endTime`). This fundamental mismatch requires careful handling.
+
+**Implementation strategies (in order of preference):**
+
+1. **Server-maintained observation store (RECOMMENDED):** The i3X server SHOULD maintain its own time-indexed observation store, populated by continuously polling the MTConnect Agent's `current` endpoint or consuming its streaming output.
+
+2. **Timestamp-to-sequence index:** The server MAY maintain a lightweight index mapping timestamp ranges to MTConnect sequence numbers.
+
+3. **Probe-based estimation:** As a fallback, the server MAY issue a MTConnect `current` request to obtain the latest sequence number and timestamp, then estimate the `from` parameter.
+
+> **Note:** The i3xmt reference implementation uses strategy (1) &mdash; an in-memory ring buffer populated from MQTT observation forwarding, with SQLite as an optional persistent backing store.
+
+### 7.4 Composite Value Structure
+
+When a compositional object (`isComposition: true`) is queried with `maxDepth > 1` (or `maxDepth=0`), the response MUST include a nested structure:
+
+```json
+{
+  "_value": { "position": 123.45, "load": 67.8 },
+  "{child_elementId}": {
+    "_value": { "position": 234.56, "load": 12.3 },
+    "{grandchild_elementId}": { ... }
+  }
+}
+```
+
+- `_value` contains the object's own properties (from its direct DataItems).
+- Recursion follows only compositional relationships (`isComposition: true`).
+- Objects with `isComposition: false` are NOT recursed into during value retrieval.
+
+> **Implication of &sect;6.1.1:** A `maxDepth=0` query on a data-bearing Component (e.g., Linear axis) returns all its DataItems &mdash; a bounded, manageable payload. The same query on the root Device does NOT cascade through organizational containers.
+
+## 8. Specific DataItem and Condition Mappings
+
+### 8.1 Samples (Analog/Continuous Data)
+
+MTConnect `SAMPLE` category items represent continuously variable or analog data (e.g., Position, Temperature, Load, Velocity).
+
+- **i3X Value Type:** MUST be coerced to a JSON Number.
+- **Engineering Units:** MTConnect units MUST be translated to UNECE Recommendation 20 codes (e.g., `MILLIMETER` &rarr; `MMT`).
+- **Range Constraints:** If MTConnect provides `Constraints` with `Maximum` and `Minimum`, these SHOULD be mapped to an EURange metadata object.
+
+### 8.2 Events (Discrete Data)
+
+| Event Sub-category | i3X Value Type | Examples |
+|--------------------|---------------|----------|
+| Controlled Vocabulary | JSON String (enumeration value) | Availability (`"AVAILABLE"`), Execution (`"ACTIVE"`) |
+| Numeric | JSON Number (integer) | PartCount, BlockCount, LineNumber |
+| String | JSON String | Program, SerialNumber, AssetChanged |
+| Message | JSON Object `{"text": "...", "nativeCode": "..."}` | Message DataItems |
+
+### 8.3 Conditions (Health and Fault Status)
+
+MTConnect `CONDITION` category items report equipment health using state-based transitions between `Normal`, `Warning`, and `Fault`.
+
+#### 8.3.1 DataItem-Level Condition Values
+
+**No active faults:** Return the string `"Normal"`.
+
+```json
+{ "value": "Normal", "quality": "Good", "timestamp": "..." }
+```
+
+**Active condition branches:** Return a JSON object keyed by `nativeCode`:
+
+```json
+{
+  "value": {
+    "SERVO_ALARM_X": { "level": "Fault", "nativeSeverity": "100", "qualifier": "HIGH" },
+    "OVERTEMP_X": { "level": "Warning" }
+  },
+  "quality": "Good",
+  "timestamp": "..."
+}
+```
+
+#### 8.3.2 Component-Level Condition Values
+
+The property value MUST be `"Normal"` or the structured branch object &mdash; not the raw MTConnect observation text.
+
+#### 8.3.3 Condition Branch Lifecycle
+
+- Multiple warnings or faults for the same DataItem MAY be active simultaneously, differentiated by `nativeCode`.
+- A `Normal` observation with no `nativeCode` clears ALL branches.
+- A `Normal` observation with a specific `nativeCode` clears only that branch.
+
+## 9. Subscription and Real-Time Data
+
+### 9.1 Subscription Flow
+
+1. `POST /subscriptions` &mdash; Create a subscription (returns `subscriptionId`).
+2. `POST /subscriptions/{id}/register` &mdash; Register `elementIds` to monitor.
+3. Consume updates via either:
+   - `GET /subscriptions/{id}/stream` &mdash; SSE for real-time delivery (QoS0).
+   - `POST /subscriptions/{id}/sync` &mdash; Poll for queued updates (QoS2).
+4. `DELETE /subscriptions/{id}` &mdash; Clean up.
+
+### 9.2 SSE/Sync Response Format
+
+```
+data: [{"elementId1": {"data": [{"value": 123, "quality": "Good", "timestamp": "..."}]}}]
+```
+
+SSE messages MUST use `data: ` prefix and double newline separators, with `Content-Type: text/event-stream`.
+
+## 10. Best Practices and Compliance
+
+### 10.1 Error Handling
+
+| Scenario | HTTP Status | Response |
+|----------|------------|----------|
+| Unknown elementId | 404 | `{"detail": "Object '{id}' not found"}` |
+| Unknown ObjectType | 404 | `{"detail": "ObjectType '{id}' not found"}` |
+| Invalid request body | 400 | `{"detail": "..."}` |
+| Historical data unavailable | 410 | `{"detail": "Requested time range is no longer available"}` |
+| Internal error | 500 | `{"detail": "..."}` |
+
+### 10.2 Performance and Caching
+
+- Implementations MAY use in-memory caches or on-disk databases for frequently accessed data.
+- The MTConnect `current` response SHOULD be polled at a configurable interval.
+- Exploratory queries SHOULD be computed from pre-built indexes, not live MTConnect requests.
+
+### 10.3 Pagination
+
+Servers SHOULD implement `offset` and `limit` pagination parameters:
+
+```
+GET /objects?typeId=PositionType&offset=0&limit=50
+```
+
+## Appendix A: Complete Relationship Type Registry
+
+| Forward Type | Inverse Type | Category | Source |
+|-------------|-------------|----------|--------|
+| `HasChildren` | `HasParent` | Organizational | Parent `isComposition: false` &rarr; children |
+| `HasComponent` | `ComponentOf` | Compositional | Parent `isComposition: true` &rarr; children |
+| `HasComponentRef` | `ComponentRefOf` | Reference | MTConnect `ComponentRef` |
+| `HasDataItemRef` | `DataItemRefOf` | Reference | MTConnect `DataItemRef` |
+| `HasDeviceRelationship` | `DeviceRelationshipOf` | Configuration | MTConnect `DeviceRelationship` |
+| `HasComponentRelationship` | `ComponentRelationshipOf` | Configuration | MTConnect `ComponentRelationship` |
+| `HasAsset` | `AssetOf` | Configuration | MTConnect `AssetRelationship` |
+| `HasSource` | `SourceOf` | Data Lineage | MTConnect `Source` element |
+| `PARENT` | `CHILD` | Configuration | MTConnect `ComponentRelationship` (type=PARENT/CHILD) |
+| `MountedOn` | `Supports` | Kinematic (derived) | Inferred from Structure PARENT/CHILD pairs |
+
+## Appendix B: ElementId Format Examples
+
+| MTConnect Element | elementId |
+|-------------------|-----------|
+| Device (uuid=`OKUMA.123456`) | `OKUMA.123456` |
+| Linear axis (id=`Lx1`) | `OKUMA.123456:Lx1` |
+| Position DataItem (id=`Lx1pos`) | `OKUMA.123456:Lx1pos` |
+| Condition DataItem (id=`Lsystem`) | `OKUMA.123456:Lsystem` |
+
+## Appendix C: DisplayName Examples
+
+| MTConnect Element | displayName |
+|-------------------|-------------|
+| Device (name=`OKUMA`) | `OKUMA` |
+| `<Axes id="Laxes1">` (unique type under Device) | `Axes` |
+| `<Linear id="Lx1" name="X">` | `Linear[X]` |
+| `<Rotary id="Lc1" name="C1">` | `Rotary[C1]` |
+| `<Structure id="x_axis">` (no name attr) | `Structure[x_axis]` |
+| DataItem `type="POSITION" subType="ACTUAL"` | `ActualPosition` |
+| DataItem `type="LOAD"` (duplicate, name=`YS1load`) | `Load[YS1load]` |
+| DataItem `type="ACCUMULATED_TIME" subType="x:TOTAL_OPERATING_TIME"` | `X_TotalOperatingTimeAccumulatedTime` |
+
+## Appendix D: isComposition and Relationship Decision Tree
+
+The relationship type between a parent and child is determined by the **parent's** `isComposition` flag:
+
+- Parent `isComposition: false` &rarr; children linked via `HasChildren`/`HasParent`
+- Parent `isComposition: true` &rarr; children linked via `HasComponent`/`ComponentOf`
+
+```
+MTConnect Element                          isComposition   Parent's relationship to this element
+-------------------------------------------------------------------------------------------------------
+Device                                     false           N/A (root, parentId="/")
++-- Axes (grouping container)              false           HasChildren (Device is false)
+|   +-- Linear[X] (data-bearing)           true            HasChildren (Axes is false)
+|   |   +-- ActualPosition (DataItem)      true            HasComponent (Linear[X] is true)
+|   |   +-- Load (DataItem)                true            HasComponent (Linear[X] is true)
+|   |   +-- System (DataItem)              true            HasComponent (Linear[X] is true)
+|   +-- Rotary[B] (data-bearing)           true            HasChildren (Axes is false)
++-- Systems (grouping container)           false           HasChildren (Device is false)
+|   +-- Electric (data-bearing)            true            HasChildren (Systems is false)
+|       +-- PowerState (DataItem)          true            HasComponent (Electric is true)
++-- Structures (grouping container)        false           HasChildren (Device is false)
+    +-- Structure[x_axis]                  false           HasChildren (Structures is false)
+```
+
+**Example: querying Linear[X] with `maxDepth=0`**
+
+```
+Linear[X]  (isComposition: true)
++-- HasComponent --> ActualPosition     --> value: 123.45
++-- HasComponent --> CommandedPosition  --> value: 124.00
++-- HasComponent --> Load               --> value: 67.8
++-- HasComponent --> System             --> value: "Normal"
+
+Response: { "_value": { "ActualPosition": 123.45, "CommandedPosition": 124.00, "Load": 67.8, "System": "Normal" } }
+```
+
+**Example: querying the root Device with `maxDepth=0`**
+
+```
+Device (isComposition: false)
++-- HasChildren --> Axes     (isComposition: false) --> NOT recursed
++-- HasChildren --> Systems  (isComposition: false) --> NOT recursed
+
+Response: { "_value": {} }
+```
+
+**Example: querying Axes with `maxDepth=0`**
+
+```
+Axes (isComposition: false)
++-- HasChildren --> Linear[X]   (isComposition: true) --> NOT recursed
++-- HasChildren --> Linear[Z1]  (isComposition: true) --> NOT recursed
++-- HasChildren --> Rotary[B]   (isComposition: true) --> NOT recursed
+
+Response: { "_value": {} }
+```
+
+Clients must explicitly navigate to data-bearing Components (via `HasChildren` traversal) and query each one individually to retrieve their composed values.
+  </script>
+
+  <script>
+    // Minimal markdown-to-HTML renderer (zero dependencies)
+    (function() {
+      var raw = document.getElementById('specMarkdown').textContent;
+      var sectionMap = {
+        '1. Scope': 'spec-s1', '2. Goals of the Companion Specification': 'spec-s2',
+        '3. Normative References': 'spec-s3', '4. Terms and Definitions': 'spec-s4',
+        '5. Architecture and System Context': 'spec-s5',
+        '6. Mapping the MTConnect Information Model to i3X': 'spec-s6',
+        '6.1 Object Representation': 'spec-s6-1', '6.2 DisplayName Rules': 'spec-s6-2',
+        '6.3 Relationship Mapping': 'spec-s6-3',
+        '7. Mapping MTConnect Streaming Data to i3X Value Methods': 'spec-s7',
+        '7.1 VQT Translation': 'spec-s7-1', '7.2 Quality Mapping': 'spec-s7-2',
+        '7.3 Data Retrieval and History': 'spec-s7-3', '7.4 Composite Value Structure': 'spec-s7-4',
+        '8. Specific DataItem and Condition Mappings': 'spec-s8',
+        '8.1 Samples (Analog/Continuous Data)': 'spec-s8-1', '8.2 Events (Discrete Data)': 'spec-s8-2',
+        '8.3 Conditions (Health and Fault Status)': 'spec-s8-3',
+        '9. Subscription and Real-Time Data': 'spec-s9',
+        '10. Best Practices and Compliance': 'spec-s10',
+        'Appendix A: Complete Relationship Type Registry': 'spec-appA',
+        'Appendix B: ElementId Format Examples': 'spec-appB',
+        'Appendix C: DisplayName Examples': 'spec-appC',
+        'Appendix D: isComposition and Relationship Decision Tree': 'spec-appD'
+      };
+
+      function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      function inline(s) {
+        s = esc(s);
+        s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+        s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        // Restore HTML entities that were in the markdown source
+        s = s.replace(/&amp;(sect|mdash|rarr|harr|lt|gt|amp);/g, '&$1;');
+        return s;
+      }
+
+      var lines = raw.split('\n'), html = [];
+      var inCode = false, inTable = false, inList = false, inBq = false, lt = '';
+
+      function cl() { if (inList) { html.push(lt==='ol'?'</ol>':'</ul>'); inList=false; } }
+      function cb() { if (inBq) { html.push('</blockquote>'); inBq=false; } }
+      function ct() { if (inTable) { html.push('</tbody></table>'); inTable=false; } }
+
+      for (var i = 0; i < lines.length; i++) {
+        var L = lines[i];
+        if (L.match(/^```/)) { cl(); cb(); ct(); if(!inCode){html.push('<pre><code>');inCode=true;}else{html.push('</code></pre>');inCode=false;} continue; }
+        if (inCode) { html.push(esc(L)); continue; }
+        if (L.trim()==='') { cl(); cb(); ct(); continue; }
+
+        var hm = L.match(/^(#{1,4})\s+(.*)/);
+        if (hm) { cl(); cb(); ct(); var lv=hm[1].length, tx=hm[2], id=sectionMap[tx]||''; html.push('<h'+lv+(id?' id="'+id+'"':'')+'>'+inline(tx)+'</h'+lv+'>'); continue; }
+
+        if (L.match(/^>\s/)) { cl(); ct(); if(!inBq){html.push('<blockquote>');inBq=true;} html.push('<p>'+inline(L.replace(/^>\s*/,''))+'</p>'); continue; }
+        if (inBq && !L.match(/^>/)) cb();
+
+        if (L.match(/^\|/)) {
+          cl(); cb();
+          var cells = L.split('|').slice(1,-1).map(function(c){return c.trim();});
+          if (cells.every(function(c){return c.match(/^[-:]+$/);})) continue;
+          if (!inTable) { html.push('<table><thead><tr>'); cells.forEach(function(c){html.push('<th>'+inline(c)+'</th>');}); html.push('</tr></thead><tbody>'); inTable=true; }
+          else { html.push('<tr>'); cells.forEach(function(c){html.push('<td>'+inline(c)+'</td>');}); html.push('</tr>'); }
+          continue;
+        }
+
+        var olm = L.match(/^(\d+)\.\s+(.*)/);
+        if (olm) { cb(); ct(); if(!inList||lt!=='ol'){cl();html.push('<ol>');inList=true;lt='ol';} html.push('<li>'+inline(olm[2])+'</li>'); continue; }
+        if (L.match(/^[-*]\s/)) { cb(); ct(); if(!inList||lt!=='ul'){cl();html.push('<ul>');inList=true;lt='ul';} html.push('<li>'+inline(L.replace(/^[-*]\s+/,''))+'</li>'); continue; }
+        if (L.match(/^\s+[-*]\s/)||L.match(/^\s+\d+\.\s/)) { html.push('<li>'+inline(L.replace(/^\s+[-*]\s+/,'').replace(/^\s+\d+\.\s+/,''))+'</li>'); continue; }
+
+        cl(); cb(); ct();
+        html.push('<p>'+inline(L)+'</p>');
+      }
+      cl(); cb(); ct(); if(inCode) html.push('</code></pre>');
+
+      document.getElementById('specContent').innerHTML = html.join('\n');
+
+      // TOC scroll spy
+      var tocLinks = document.querySelectorAll('#specToc a');
+      var sections = [];
+      tocLinks.forEach(function(a) {
+        var id = a.getAttribute('href');
+        if (!id) return;
+        var el = document.querySelector(id);
+        if (el) sections.push({ el: el, link: a });
+      });
+      function updateToc() {
+        var scrollY = window.scrollY + 80;
+        var active = null;
+        for (var j = sections.length - 1; j >= 0; j--) {
+          if (sections[j].el.offsetTop <= scrollY) { active = sections[j]; break; }
+        }
+        tocLinks.forEach(function(a) { a.classList.remove('active'); });
+        if (active) active.link.classList.add('active');
+      }
+      window.addEventListener('scroll', updateToc);
+      updateToc();
+    })();
+  </script>
+</body>
+</html>
