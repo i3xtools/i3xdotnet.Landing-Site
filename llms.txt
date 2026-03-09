@@ -42,7 +42,7 @@ MCP (Model Context Protocol) server that gives AI agents full access to any i3X 
 Direct access: connect_and_index, list_servers, get_object, get_value, get_values_bulk, get_related, list_namespaces, list_object_types, list_objects.
 Search tools: search (natural language BM25), search_by_type, search_related, describe_model.
 Graph tools: traverse (walk N hops filtered by edge/node type), find_path (shortest path between two nodes), neighborhood (all nodes within N hops), subtree_summary (count objects by type under a parent), ancestors (walk up hierarchy to root), aggregate (group by type or parent), composition_tree, relationship_map, type_schema.
-Analysis tools: value_filter (filter by quality/range), stale_values (find outdated values).
+Analysis tools: value_filter (filter by quality/range), stale_values (find outdated values), get_history (historical values with time range filter).
 
 Workflow: configure → index → search/traverse. i3X API to searchable, traversable knowledge base in seconds.
 
