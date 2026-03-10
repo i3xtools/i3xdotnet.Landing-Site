@@ -133,18 +133,84 @@
       background: var(--accent-dim) !important;
     }
     .nav-cta:hover { background: rgba(0, 224, 196, 0.18) !important; }
-    .nav-view {
-      color: var(--text-bright) !important;
-      border: 1px solid var(--border) !important;
-      background: rgba(255,255,255,0.04) !important;
-    }
-    .nav-view:hover { background: rgba(255,255,255,0.08) !important; border-color: var(--text-dim) !important; }
     .video-strip { display: flex; align-items: center; justify-content: center; gap: 0.25rem; padding: 0.5rem 1.5rem; margin: 0 auto; max-width: 960px; }
-    .video-strip-label { color: var(--text-dim); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 0.5rem; white-space: nowrap; display: flex; align-items: center; gap: 0.375rem; }
+    .video-strip-label { color: var(--text-dim); font-size: 0.75rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 0.5rem; white-space: nowrap; display: flex; align-items: center; gap: 0.375rem; text-decoration: none; transition: color 0.15s; }
+    .video-strip-label:hover { color: var(--text-bright); }
     .video-strip-label svg { width: 14px; height: 14px; color: #ff4444; flex-shrink: 0; }
     .video-strip a { color: var(--text-dim); text-decoration: none; font-size: 0.75rem; font-weight: 500; padding: 0.25rem 0.625rem; border-radius: 4px; border: 1px solid transparent; transition: color 0.15s, border-color 0.15s, background 0.15s; white-space: nowrap; }
     .video-strip a:hover { color: var(--text-bright); border-color: var(--border); background: rgba(255,255,255,0.04); }
     .video-strip a.active-video { color: var(--text-bright); border-color: var(--border); }
+
+    /* ── EXPLORE BAR ── */
+    .explore-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.625rem;
+      padding: 1rem 2rem 0.25rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .explore-bar-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.25rem;
+      background: var(--accent-dim);
+      border: 1px solid var(--border-accent);
+      border-radius: 8px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-decoration: none;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    .explore-bar-primary:hover {
+      background: rgba(0, 224, 196, 0.2);
+      box-shadow: 0 0 20px rgba(0, 224, 196, 0.15);
+      transform: translateY(-1px);
+    }
+    .explore-bar-primary svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .explore-bar-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 0.25rem;
+    }
+    .explore-bar-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .explore-bar-link:hover { color: var(--text-bright); border-color: var(--border); background: rgba(255,255,255,0.04); }
+    .explore-bar-link svg { width: 13px; height: 13px; flex-shrink: 0; opacity: 0.5; }
+    .explore-bar-monitor {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .explore-bar-monitor:hover { color: #f472b6; border-color: rgba(244, 114, 182, 0.2); background: rgba(244, 114, 182, 0.06); }
+    .explore-bar-monitor svg { width: 13px; height: 13px; flex-shrink: 0; opacity: 0.5; }
 
     /* ── PAGE ROUTING ── */
     .page-section { display: none; position: relative; z-index: 1; flex: 1; }
@@ -783,7 +849,12 @@
     @media (max-width: 768px) {
       .nav-links a:not(.nav-cta) { display: none; }
       .video-strip { flex-wrap: wrap; gap: 0.125rem; padding: 0.375rem 1rem; }
-      .video-strip-label { margin-right: 0.25rem; }
+      .video-strip-label { margin-right: 0; }
+      .video-strip a:not(.video-strip-label) { display: none; }
+      .explore-bar { flex-wrap: wrap; padding: 0.75rem 1rem 0.25rem; gap: 0.375rem; }
+      .explore-bar-sep { display: none; }
+      .explore-bar-link { display: none; }
+      .explore-bar-primary { font-size: 0.75rem; padding: 0.4rem 1rem; }
       .hero-banner { margin-top: 4rem; padding: 0 1.5rem; }
       .hero-overlay { padding: 1.5rem; }
       .hero-image { aspect-ratio: 16 / 9; }
@@ -812,8 +883,6 @@
         <span>i3<em>X</em>.net</span>
       </a>
       <div class="nav-links">
-        <a href="https://view.i3x.net/?server=https://demo01.i3x.net" target="_blank" class="nav-view">Explore</a>
-        <a href="https://dash.i3x.net" target="_blank" class="nav-view">Monitor</a>
         <a href="#/downloads" class="nav-cta" data-nav>Downloads</a>
       </div>
     </div>
@@ -834,12 +903,37 @@
     </div>
 
     <div class="video-strip">
-      <span class="video-strip-label"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2 31.4 31.4 0 000 12a31.4 31.4 0 00.5 5.8 3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1A31.4 31.4 0 0024 12a31.4 31.4 0 00-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>Video Series</span>
+      <a href="https://www.youtube.com/watch?v=HT8TQiLmOpU&list=PLVer2RC_mMygMv_Ao1ywMGRUOAf_oLmjw" target="_blank" class="video-strip-label"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2 31.4 31.4 0 000 12a31.4 31.4 0 00.5 5.8 3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1A31.4 31.4 0 0024 12a31.4 31.4 0 00-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>Video Series</a>
       <a href="https://youtu.be/HT8TQiLmOpU" target="_blank">Introduction</a>
       <a href="https://youtu.be/hdHmW9Tt8A8" target="_blank">Data Model</a>
       <a href="https://youtu.be/KGAE46MN9Cc" target="_blank">Relationships</a>
       <a href="https://youtu.be/yhvSoWfliSA" target="_blank">Subscriptions</a>
       <a href="https://youtu.be/04G0w7bnMKI" target="_blank">MTConnect</a>
+    </div>
+
+    <div class="explore-bar">
+      <a href="https://view.i3x.net/?server=https://demo01.i3x.net" target="_blank" class="explore-bar-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        Explore UNS
+      </a>
+      <div class="explore-bar-sep"></div>
+      <a href="https://view.i3x.net/?server=https://erp.demo01.i3x.net" target="_blank" class="explore-bar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h4"/></svg>
+        ERP
+      </a>
+      <a href="https://view.i3x.net/?server=https://okuma.demo01.i3x.net" target="_blank" class="explore-bar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        Okuma
+      </a>
+      <a href="https://view.i3x.net/?server=https://mazak.demo01.i3x.net" target="_blank" class="explore-bar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        Mazak
+      </a>
+      <div class="explore-bar-sep"></div>
+      <a href="https://dash.i3x.net" target="_blank" class="explore-bar-monitor">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Monitor
+      </a>
     </div>
 
     <div class="tools-grid">
