@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MTConnect to i3X Companion Specification v0.0.2</title>
+  <title>MTConnect to i3X Companion Specification v0.0.2 (i3X v1)</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -312,6 +312,8 @@
         <li><a href="#spec-s3">3. Normative References</a></li>
         <li><a href="#spec-s4">4. Terms and Definitions</a></li>
         <li><a href="#spec-s5">5. Architecture</a></li>
+        <li><a href="#spec-s5-1" class="toc-sub">5.1 Response Envelopes</a></li>
+        <li><a href="#spec-s5-2" class="toc-sub">5.2 Server Capabilities</a></li>
         <li><a href="#spec-s6">6. Mapping to i3X</a></li>
         <li><a href="#spec-s6-1" class="toc-sub">6.1 Object Representation</a></li>
         <li><a href="#spec-s6-2" class="toc-sub">6.2 DisplayName Rules</a></li>
@@ -350,7 +352,17 @@
   <script type="text/template" id="specMarkdown">
 # MTConnect to i3X Companion Specification
 
-**Version:** 0.0.2 (Draft)
+**Version:** 0.0.2 (Draft) &mdash; aligned to i3X **v1 (1.0)** wire format
+
+**Changelog (i3X v1 / 1.0 alignment):**
+- Added &sect;5.1 Response Envelopes &mdash; all endpoints use the 1.0 `{success, result}` / bulk `{success, results: [...]}` envelopes
+- Added &sect;5.2 Server Capabilities &mdash; `GET /info` is now required and documented
+- &sect;6.1: `typeId` &rarr; `typeElementId`; instances no longer carry `namespaceUri` (moved to `metadata.typeNamespaceUri` under `includeMetadata`); root `parentId` is `null` (was `"/"`); added `isExtended`
+- &sect;7.4 / Appendix D: composite values use the flat `components` map (`CurrentValueResult`) instead of the nested `_value` + keyed-children object
+- &sect;9: subscriptions restructured to flat POST endpoints with `subscriptionId`/`clientId` in the body; sync returns batched `[{sequenceNumber, updates}]` with `lastSequenceNumber` ack; SSE emits a flat update array
+- &sect;6.1.1: DataItems are `isComposition: false` (a leaf has no composed children); their parent component stays `true`
+- &sect;10.1: errors use the `responseDetail` problem-details envelope; pagination uses `typeElementId`
+- Forward-only &mdash; no v0/Beta compatibility
 
 **Changelog from 0.0.1:**
 - Revised &sect;6.1.1 isComposition rules &mdash; introduced a two-tier model distinguishing structural (organizational) elements from data-bearing (compositional) elements
@@ -400,6 +412,45 @@ In an integrated environment, an i3X Server acts as an abstraction layer above o
 +---------------+ /SSE+---------------+     +---------------+
 ```
 
+### 5.1 Response Envelopes (i3X 1.0)
+
+All endpoints use the i3X 1.0 response envelopes:
+
+- **Single-value responses** (`GET /info`, `/namespaces`, `/objecttypes`, `/relationshiptypes`, `/objects`) wrap the payload: `{ "success": true, "result": <payload> }`.
+- **Bulk responses** (any endpoint taking an array of `elementIds` or `subscriptionIds` &mdash; `/objects/list`, `/objects/related`, `/objects/value`, `/objects/history`, `/objecttypes/query`, `/relationshiptypes/query`, and the subscription endpoints) return a per-item array in request order; top-level `success` is `false` if any item failed:
+
+```json
+{
+  "success": false,
+  "results": [
+    { "success": true,  "elementId": "OKUMA.123456:Lx1", "result": { } },
+    { "success": false, "elementId": "missing",          "responseDetail": { "title": "Not Found", "status": 404, "detail": "Element not found: missing" } }
+  ]
+}
+```
+
+- **Error responses** use the `responseDetail` problem-details object (see &sect;10.1).
+
+### 5.2 Server Capabilities (GET /info)
+
+Servers MUST expose `GET /info` (no authentication required) advertising the spec version and supported optional features:
+
+```json
+{
+  "success": true,
+  "result": {
+    "specVersion": "1.0",
+    "serverVersion": "<build>",
+    "serverName": "i3xmt",
+    "capabilities": {
+      "query":     { "history": true },
+      "update":    { "current": false, "history": false },
+      "subscribe": { "stream": true }
+    }
+  }
+}
+```
+
 ## 6. Mapping the MTConnect Information Model to i3X
 
 The MTConnect information model is represented in the i3X Address Space as a set of Object Instances, Object Types, and Relationships. The i3X model separates the semantic metadata (the Object and its attributes) from the time-series values (Value, Quality, Timestamp).
@@ -414,10 +465,12 @@ Each i3X Object Instance MUST include the following required metadata:
 |-------|-------------|
 | `elementId` | Derived from the MTConnect `id` attribute, prefixed with the Device `uuid` for global uniqueness: `"{device_uuid}:{mtconnect_id}"`. The root Device object uses `"{device_uuid}"` without a suffix. |
 | `displayName` | Derived using the naming conventions defined in &sect;6.2. |
-| `typeId` | The `elementId` of the registered i3X ObjectType that defines this class. Each specific MTConnect type maps to a dedicated i3X ObjectType (e.g., `POSITION` &rarr; `PositionType`, `EXECUTION` &rarr; `ExecutionType`). |
-| `namespaceUri` | The MTConnect namespace URI (e.g., `urn:mtconnect.org:MTConnectDevices:2.0`). |
-| `parentId` | The `elementId` of the parent object. Root objects (Device) MUST use `"/"` as the sentinel value. |
+| `typeElementId` | The `elementId` of the registered i3X ObjectType that defines this class. Each specific MTConnect type maps to a dedicated i3X ObjectType (e.g., `POSITION` &rarr; `PositionType`, `EXECUTION` &rarr; `ExecutionType`). |
+| `parentId` | The `elementId` of the parent object, or `null` for the root Device object. (i3X 1.0 uses `null` &mdash; not the `"/"` sentinel used in earlier drafts.) |
 | `isComposition` | A boolean flag. See &sect;6.1.1 for rules. |
+| `isExtended` | A boolean flag, `false` for all MTConnect-derived objects (their values conform to the declared ObjectType schema). |
+
+> **Note (i3X 1.0):** Object instances do not carry `namespaceUri`. The namespace of the instance's type is exposed as `metadata.typeNamespaceUri` and returned only when the request sets `includeMetadata=true`. The MTConnect namespace URI (e.g., `urn:mtconnect.org:MTConnectDevices:2.0`) is the namespace of the registered ObjectTypes/RelationshipTypes.
 
 #### 6.1.1 isComposition Rules
 
@@ -437,11 +490,11 @@ The MTConnect model contains two distinct structural patterns:
 
 | Element | isComposition | Relationship to parent | Rationale |
 |---------|--------------|----------------------|-----------|
-| Root Device | `false` | N/A (root, `parentId="/"`) | Device is a top-level entry point, not composed data |
+| Root Device | `false` | N/A (root, `parentId=null`) | Device is a top-level entry point, not composed data |
 | Grouping containers (Axes, Systems, Auxiliaries, Resources, Structures) | `false` | `HasChildren` / `HasParent` | Organizational topology &mdash; these group children but carry no data of their own |
 | Data-bearing Components (Linear, Rotary, Path, etc.) | `true` | `HasComponent` / `ComponentOf` | Their DataItems compose the Component's value |
 | MTConnect Compositions (Motor, Spindle, etc.) | `true` | `HasComponent` / `ComponentOf` | Lowest-level data-bearing parts of a Component |
-| DataItems | `true` | `HasComponent` / `ComponentOf` | A DataItem's value IS part of its parent's composite value |
+| DataItems | `false` | `HasComponent` / `ComponentOf` | A DataItem is a leaf telemetry point &mdash; part of its parent's composite value, but it has no composed children of its own, so it is not itself a composition. The parent&rarr;DataItem edge is still `HasComponent` because the parent is `isComposition: true`. |
 
 > **Design rationale:** This two-tier model allows clients to traverse the equipment topology using `HasChildren` without triggering data recursion, then drill into specific data-bearing Components via `HasComponent` with `maxDepth` to retrieve their composed values. A `maxDepth=0` query on a Linear axis returns its position, load, and condition data &mdash; a manageable payload. A client that truly needs the entire machine's data can still walk the tree programmatically.
 
@@ -528,14 +581,14 @@ The MTConnect device tree uses two relationship types depending on whether the *
 Device (isComposition: false)
  +-- HasChildren --> Axes (isComposition: false)
  |   +-- HasChildren --> Linear[X] (isComposition: true)
- |   |   +-- HasComponent --> ActualPosition (isComposition: true)
- |   |   +-- HasComponent --> Load (isComposition: true)
- |   |   +-- HasComponent --> System (isComposition: true)
+ |   |   +-- HasComponent --> ActualPosition (isComposition: false)
+ |   |   +-- HasComponent --> Load (isComposition: false)
+ |   |   +-- HasComponent --> System (isComposition: false)
  |   +-- HasChildren --> Linear[Z1] (isComposition: true)
  |   +-- HasChildren --> Rotary[B] (isComposition: true)
  +-- HasChildren --> Systems (isComposition: false)
      +-- HasChildren --> Electric (isComposition: true)
-         +-- HasComponent --> PowerState (isComposition: true)
+         +-- HasComponent --> PowerState (isComposition: false)
 ```
 
 The `parentId` field on each child object MUST be populated with the `elementId` of its parent regardless of relationship type.
@@ -620,21 +673,34 @@ MTConnect's native historical data architecture uses sequence numbers (`from`, `
 
 ### 7.4 Composite Value Structure
 
-When a compositional object (`isComposition: true`) is queried with `maxDepth > 1` (or `maxDepth=0`), the response MUST include a nested structure:
+Each `/objects/value` result item is a `CurrentValueResult`: the element's own VQT plus, for compositional objects queried with `maxDepth != 1`, a flat `components` map keyed by descendant `elementId` (each entry a VQT):
 
 ```json
 {
-  "_value": { "position": 123.45, "load": 67.8 },
-  "{child_elementId}": {
-    "_value": { "position": 234.56, "load": 12.3 },
-    "{grandchild_elementId}": { ... }
-  }
+  "success": true,
+  "results": [
+    {
+      "success": true,
+      "elementId": "OKUMA.123456:Lx1",
+      "result": {
+        "isComposition": true,
+        "value": { "ActualPosition": 123.45, "Load": 67.8 },
+        "quality": "Good",
+        "timestamp": "2026-01-29T16:37:41Z",
+        "components": {
+          "OKUMA.123456:Lx1pos": { "value": 123.45, "quality": "Good", "timestamp": "..." },
+          "OKUMA.123456:Lx1load": { "value": 67.8, "quality": "Good", "timestamp": "..." }
+        }
+      }
+    }
+  ]
 }
 ```
 
-- `_value` contains the object's own properties (from its direct DataItems).
-- Recursion follows only compositional relationships (`isComposition: true`).
-- Objects with `isComposition: false` are NOT recursed into during value retrieval.
+- The top-level `value`/`quality`/`timestamp` reflect the element's own rolled-up VQT (its direct DataItems).
+- `components` is present only on composition elements when `maxDepth != 1`; deeper descendants are flattened into the same map keyed by `elementId`.
+- Recursion follows only compositional relationships (`isComposition: true`); `isComposition: false` containers are NOT recursed.
+- (Earlier drafts used a nested `_value` + keyed-children object; i3X 1.0 replaces that with the flat `components` map.)
 
 > **Implication of &sect;6.1.1:** A `maxDepth=0` query on a data-bearing Component (e.g., Linear axis) returns all its DataItems &mdash; a bounded, manageable payload. The same query on the root Device does NOT cascade through organizational containers.
 
@@ -696,32 +762,52 @@ The property value MUST be `"Normal"` or the structured branch object &mdash; no
 
 ### 9.1 Subscription Flow
 
-1. `POST /subscriptions` &mdash; Create a subscription (returns `subscriptionId`).
-2. `POST /subscriptions/{id}/register` &mdash; Register `elementIds` to monitor.
+i3X 1.0 subscriptions use flat POST endpoints with `subscriptionId`/`clientId` in the request body (not in the URL path):
+
+1. `POST /subscriptions` &mdash; Create a subscription. Body `{ "clientId", "displayName" }` (both optional); returns `{ "success": true, "result": { "clientId", "subscriptionId", "displayName" } }`. `subscriptionId` is an opaque string.
+2. `POST /subscriptions/register` &mdash; Register items. Body `{ "clientId", "subscriptionId", "elementIds", "maxDepth" }`; returns a bulk response.
 3. Consume updates via either:
-   - `GET /subscriptions/{id}/stream` &mdash; SSE for real-time delivery (QoS0).
-   - `POST /subscriptions/{id}/sync` &mdash; Poll for queued updates (QoS2).
-4. `DELETE /subscriptions/{id}` &mdash; Clean up.
+   - `POST /subscriptions/stream` &mdash; SSE for real-time delivery (QoS0). Body `{ "clientId", "subscriptionId" }`.
+   - `POST /subscriptions/sync` &mdash; Poll for queued updates (QoS2). Body `{ "clientId", "subscriptionId", "lastSequenceNumber" }`.
+4. `POST /subscriptions/unregister`, `POST /subscriptions/list`, `POST /subscriptions/delete` &mdash; manage/clean up (bulk).
 
-### 9.2 SSE/Sync Response Format
+### 9.2 Sync Response Format
+
+`POST /subscriptions/sync` returns batched updates wrapped in the single-value envelope. Each batch has a monotonically increasing `sequenceNumber`; the client acknowledges by passing `lastSequenceNumber` on the next call (batches with `sequenceNumber <= lastSequenceNumber` are dropped first; `-1` clears all):
+
+```json
+{
+  "success": true,
+  "result": [
+    { "sequenceNumber": 1, "updates": [
+      { "elementId": "OKUMA.123456:Lx1pos", "value": 123.45, "quality": "Good", "timestamp": "..." }
+    ] }
+  ]
+}
+```
+
+If queued updates were dropped due to a server-imposed queue limit, the server returns HTTP 206 with a top-level `responseDetail`.
+
+### 9.3 SSE Stream Format
+
+`POST /subscriptions/stream` opens a `text/event-stream`; each message is a flat JSON array of updates, using the `data: ` prefix and double-newline separators:
 
 ```
-data: [{"elementId1": {"data": [{"value": 123, "quality": "Good", "timestamp": "..."}]}}]
+data: [{"elementId": "OKUMA.123456:Lx1pos", "value": 123, "quality": "Good", "timestamp": "..."}]
 ```
-
-SSE messages MUST use `data: ` prefix and double newline separators, with `Content-Type: text/event-stream`.
 
 ## 10. Best Practices and Compliance
 
 ### 10.1 Error Handling
 
+Errors use the i3X 1.0 failure envelope `{ "success": false, "responseDetail": { "title", "status", "detail" } }`. For bulk endpoints, per-item failures carry the same `responseDetail` inside each `results[]` entry (HTTP stays 200; the failure is per item).
+
 | Scenario | HTTP Status | Response |
 |----------|------------|----------|
-| Unknown elementId | 404 | `{"detail": "Object '{id}' not found"}` |
-| Unknown ObjectType | 404 | `{"detail": "ObjectType '{id}' not found"}` |
-| Invalid request body | 400 | `{"detail": "..."}` |
-| Historical data unavailable | 410 | `{"detail": "Requested time range is no longer available"}` |
-| Internal error | 500 | `{"detail": "..."}` |
+| Unknown elementId | 404 | `{"success": false, "responseDetail": {"title": "Not Found", "status": 404, "detail": "Element not found: {id}"}}` |
+| Unknown ObjectType | 404 | `{"success": false, "responseDetail": {"title": "Not Found", "status": 404, "detail": "ObjectType '{id}' not found"}}` |
+| Invalid request body | 400 | `{"success": false, "responseDetail": {"title": "Bad Request", "status": 400, "detail": "..."}}` |
+| Internal error | 500 | `{"success": false, "responseDetail": {"title": "Internal Server Error", "status": 500, "detail": "..."}}` |
 
 ### 10.2 Performance and Caching
 
@@ -734,7 +820,7 @@ SSE messages MUST use `data: ` prefix and double newline separators, with `Conte
 Servers SHOULD implement `offset` and `limit` pagination parameters:
 
 ```
-GET /objects?typeId=PositionType&offset=0&limit=50
+GET /objects?typeElementId=PositionType&offset=0&limit=50
 ```
 
 ## Appendix A: Complete Relationship Type Registry
@@ -784,16 +870,16 @@ The relationship type between a parent and child is determined by the **parent's
 ```
 MTConnect Element                          isComposition   Parent's relationship to this element
 -------------------------------------------------------------------------------------------------------
-Device                                     false           N/A (root, parentId="/")
+Device                                     false           N/A (root, parentId=null)
 +-- Axes (grouping container)              false           HasChildren (Device is false)
 |   +-- Linear[X] (data-bearing)           true            HasChildren (Axes is false)
-|   |   +-- ActualPosition (DataItem)      true            HasComponent (Linear[X] is true)
-|   |   +-- Load (DataItem)                true            HasComponent (Linear[X] is true)
-|   |   +-- System (DataItem)              true            HasComponent (Linear[X] is true)
+|   |   +-- ActualPosition (DataItem)      false           HasComponent (Linear[X] is true)
+|   |   +-- Load (DataItem)                false           HasComponent (Linear[X] is true)
+|   |   +-- System (DataItem)              false           HasComponent (Linear[X] is true)
 |   +-- Rotary[B] (data-bearing)           true            HasChildren (Axes is false)
 +-- Systems (grouping container)           false           HasChildren (Device is false)
 |   +-- Electric (data-bearing)            true            HasChildren (Systems is false)
-|       +-- PowerState (DataItem)          true            HasComponent (Electric is true)
+|       +-- PowerState (DataItem)          false           HasComponent (Electric is true)
 +-- Structures (grouping container)        false           HasChildren (Device is false)
     +-- Structure[x_axis]                  false           HasChildren (Structures is false)
 ```
@@ -807,7 +893,15 @@ Linear[X]  (isComposition: true)
 +-- HasComponent --> Load               --> value: 67.8
 +-- HasComponent --> System             --> value: "Normal"
 
-Response: { "_value": { "ActualPosition": 123.45, "CommandedPosition": 124.00, "Load": 67.8, "System": "Normal" } }
+Response result: {
+  "isComposition": true,
+  "value": { "ActualPosition": 123.45, "CommandedPosition": 124.00, "Load": 67.8, "System": "Normal" },
+  "quality": "Good", "timestamp": "...",
+  "components": {
+    "OKUMA.123456:Lx1pos": { "value": 123.45, "quality": "Good", "timestamp": "..." },
+    "OKUMA.123456:Lx1load": { "value": 67.8, "quality": "Good", "timestamp": "..." }
+  }
+}
 ```
 
 **Example: querying the root Device with `maxDepth=0`**
@@ -817,7 +911,7 @@ Device (isComposition: false)
 +-- HasChildren --> Axes     (isComposition: false) --> NOT recursed
 +-- HasChildren --> Systems  (isComposition: false) --> NOT recursed
 
-Response: { "_value": {} }
+Response result: { "isComposition": false, "value": {}, "quality": "Good", "timestamp": "..." }  (no components)
 ```
 
 **Example: querying Axes with `maxDepth=0`**
@@ -828,7 +922,7 @@ Axes (isComposition: false)
 +-- HasChildren --> Linear[Z1]  (isComposition: true) --> NOT recursed
 +-- HasChildren --> Rotary[B]   (isComposition: true) --> NOT recursed
 
-Response: { "_value": {} }
+Response result: { "isComposition": false, "value": {}, "quality": "Good", "timestamp": "..." }  (no components)
 ```
 
 Clients must explicitly navigate to data-bearing Components (via `HasChildren` traversal) and query each one individually to retrieve their composed values.
@@ -842,6 +936,8 @@ Clients must explicitly navigate to data-bearing Components (via `HasChildren` t
         '1. Scope': 'spec-s1', '2. Goals of the Companion Specification': 'spec-s2',
         '3. Normative References': 'spec-s3', '4. Terms and Definitions': 'spec-s4',
         '5. Architecture and System Context': 'spec-s5',
+        '5.1 Response Envelopes (i3X 1.0)': 'spec-s5-1',
+        '5.2 Server Capabilities (GET /info)': 'spec-s5-2',
         '6. Mapping the MTConnect Information Model to i3X': 'spec-s6',
         '6.1 Object Representation': 'spec-s6-1', '6.2 DisplayName Rules': 'spec-s6-2',
         '6.3 Relationship Mapping': 'spec-s6-3',
