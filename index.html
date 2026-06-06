@@ -322,7 +322,6 @@
     }
     .hero-overlay h1 .ch {
       opacity: 0;
-      transition: opacity 0.25s linear;
       will-change: opacity;
     }
     @media (prefers-reduced-motion: reduce) {
@@ -1691,19 +1690,34 @@ i3xag-server \
       var revealAll = function () { chars.forEach(function (c) { c.style.opacity = '1'; }); };
       if (reduce || !v) { revealAll(); return; }
 
-      var N = chars.length, START = 0.10, END = 0.88, FADE = 3; // FADE ~ letters fading together
-      v.addEventListener('timeupdate', function () {
-        if (!v.duration || !isFinite(v.duration)) return;
-        var p = (v.currentTime / v.duration - START) / (END - START);
-        p = Math.max(0, Math.min(1, p));
-        var lead = p * (N + FADE); // leading edge, in letter units
-        for (var i = 0; i < N; i++) {
-          var o = (lead - i) / FADE;
-          chars[i].style.opacity = String(o < 0 ? 0 : (o > 1 ? 1 : o));
+      // FADE is the width of the soft leading edge in letter-units — a wide
+      // feather means several letters are mid-fade at once, so the sweep reads as
+      // a smooth gradient wipe rather than discrete letters popping on.
+      var N = chars.length, START = 0.10, END = 0.88, FADE = 7;
+      var ease = function (t) { return t * t * (3 - 2 * t); }; // smoothstep
+
+      var raf = 0;
+      var paint = function () {
+        raf = 0;
+        if (v.duration && isFinite(v.duration)) {
+          var p = (v.currentTime / v.duration - START) / (END - START);
+          p = Math.max(0, Math.min(1, p));
+          var lead = p * (N + FADE); // leading edge, in letter units
+          for (var i = 0; i < N; i++) {
+            var o = (lead - i) / FADE;
+            o = o < 0 ? 0 : (o > 1 ? 1 : o);
+            chars[i].style.opacity = String(ease(o));
+          }
         }
-      });
+        if (!v.paused && !v.ended) raf = window.requestAnimationFrame(paint);
+      };
+      var start = function () { if (!raf) raf = window.requestAnimationFrame(paint); };
+
+      v.addEventListener('play', start);
+      v.addEventListener('playing', start);
       v.addEventListener('ended', revealAll);
       v.addEventListener('error', revealAll);
+      if (!v.paused) start(); // already autoplaying
       // Fallback: if autoplay is blocked and the video never starts, show the title anyway.
       setTimeout(function () { if (v.paused && v.currentTime === 0) revealAll(); }, 1500);
     })();
