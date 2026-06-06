@@ -336,6 +336,16 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
+    /* When the title is split into per-letter spans, the gradient/clip must live
+       on each span — child inline text otherwise paints over the parent's clipped
+       gradient with transparent fill and disappears. */
+    .hero-overlay h1 em .ch {
+      background: linear-gradient(135deg, var(--accent), var(--blue));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
     .hero-overlay p {
       font-size: 1.0625rem;
       font-weight: 300;
