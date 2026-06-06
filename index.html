@@ -1371,6 +1371,20 @@ i3xag-server \
       </div>
     </section>
     <div class="config-section reveal">
+      <div class="config-block" style="margin-bottom:1.5rem;border:1px solid var(--accent,#00e0c4);">
+        <div class="config-block-header">Hosted MCP endpoint &mdash; try it live, no install</div>
+        <pre>{
+  <span class="info">"mcpServers"</span>: {
+    <span class="info">"i3xrag"</span>: {
+      <span class="info">"command"</span>: <span class="str">"npx"</span>,
+      <span class="info">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"mcp-remote"</span>, <span class="str">"https://demo01.i3x.net/mcp"</span>]
+    }
+  }
+}</pre>
+        <p style="margin-top:0.75rem;font-size:0.9rem;color:var(--text,#c9d1d9);">Add it to Claude Desktop (or any MCP client) and ask:</p>
+        <p style="margin-top:0.4rem;font-size:0.95rem;"><em>&ldquo;Connect to the <span class="str">https://api.i3x.dev/v1</span> i3X server and report status.&rdquo;</em></p>
+        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim,#6e7681);">Streamable-HTTP MCP at <span class="info">https://demo01.i3x.net/mcp</span>. i3xrag indexes any i3X server you name and answers questions about its model &mdash; search, traverse, and analyze. Or self-host below.</p>
+      </div>
       <div class="config-grid">
         <div class="config-block">
           <div class="config-block-header">claude_desktop_config.json</div>
