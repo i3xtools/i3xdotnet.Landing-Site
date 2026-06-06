@@ -319,11 +319,15 @@
       color: var(--text-bright);
       margin-bottom: 0.75rem;
       opacity: 0;
-      transform: translateY(12px);
-      transition: opacity 0.35s linear, transform 0.6s ease-out;
+    }
+    .hero-overlay h1 .ch {
+      opacity: 0;
+      transition: opacity 0.25s linear;
+      will-change: opacity;
     }
     @media (prefers-reduced-motion: reduce) {
-      .hero-overlay h1 { opacity: 1; transform: none; transition: none; }
+      .hero-overlay h1,
+      .hero-overlay h1 .ch { opacity: 1 !important; transition: none; }
     }
     .hero-overlay h1 em {
       font-style: normal;
@@ -1643,28 +1647,55 @@ i3xag-server \
     function markSubmitted() {
       try { localStorage.setItem('i3x_dl_submitted', '1'); } catch(e) {}
     }
-    // Reveal the hero title in time with the video: title fades/slides in
-    // between 35% and 85% of playback, then holds. Robust to any clip length.
+    // Reveal the hero title letter-by-letter, left to right, in time with the
+    // video — tracking the triangle that sweeps across the clip. Each character
+    // fades in as the playback "leading edge" passes its position.
     (function () {
       var v = document.querySelector('.hero-image video');
       var h = document.querySelector('.hero-overlay h1');
-      if (!v || !h) return;
+      if (!h) return;
+
+      // Split all text (including inside <em>) into per-character spans, in reading order.
+      var chars = [];
+      (function split(node) {
+        Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+          if (n.nodeType === 3) {
+            var text = n.nodeValue, frag = document.createDocumentFragment();
+            for (var i = 0; i < text.length; i++) {
+              var s = document.createElement('span');
+              s.className = 'ch';
+              s.textContent = text[i];
+              if (text[i] === ' ') s.style.whiteSpace = 'pre';
+              frag.appendChild(s);
+              chars.push(s);
+            }
+            node.replaceChild(frag, n);
+          } else if (n.nodeType === 1) {
+            split(n); // recurse into <em>
+          }
+        });
+      })(h);
+      h.style.opacity = '1';
+
       var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var reveal = function () { h.style.opacity = '1'; h.style.transform = 'none'; };
-      if (reduce) { reveal(); return; }
-      var START = 0.35, END = 0.85;
+      var revealAll = function () { chars.forEach(function (c) { c.style.opacity = '1'; }); };
+      if (reduce || !v) { revealAll(); return; }
+
+      var N = chars.length, START = 0.10, END = 0.88, FADE = 3; // FADE ~ letters fading together
       v.addEventListener('timeupdate', function () {
         if (!v.duration || !isFinite(v.duration)) return;
-        var p = v.currentTime / v.duration;
-        var o = (p - START) / (END - START);
-        o = Math.max(0, Math.min(1, o));
-        h.style.opacity = String(o);
-        h.style.transform = 'translateY(' + (12 * (1 - o)) + 'px)';
+        var p = (v.currentTime / v.duration - START) / (END - START);
+        p = Math.max(0, Math.min(1, p));
+        var lead = p * (N + FADE); // leading edge, in letter units
+        for (var i = 0; i < N; i++) {
+          var o = (lead - i) / FADE;
+          chars[i].style.opacity = String(o < 0 ? 0 : (o > 1 ? 1 : o));
+        }
       });
-      v.addEventListener('ended', reveal);
-      v.addEventListener('error', reveal);
+      v.addEventListener('ended', revealAll);
+      v.addEventListener('error', revealAll);
       // Fallback: if autoplay is blocked and the video never starts, show the title anyway.
-      setTimeout(function () { if (v.paused && v.currentTime === 0) reveal(); }, 1500);
+      setTimeout(function () { if (v.paused && v.currentTime === 0) revealAll(); }, 1500);
     })();
 
     function copyMcpEndpoint(btn) {
