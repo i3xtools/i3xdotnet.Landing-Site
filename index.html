@@ -318,15 +318,16 @@
       line-height: 1.1;
       color: var(--text-bright);
       margin-bottom: 0.75rem;
-      opacity: 0;
-    }
-    .hero-overlay h1 .ch {
-      opacity: 0;
-      will-change: opacity;
+      overflow-wrap: break-word;
+      /* Hidden until a video-synced left-to-right wipe reveals it (JS drives the
+         mask). A mask composites after the text is painted, so it works on the
+         gradient <em> and on iOS Safari — unlike per-letter opacity. Without JS
+         or with reduced motion, the title falls back to fully visible. */
+      -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0,0,0,0) 0%);
+              mask-image: linear-gradient(90deg, #000 0%, rgba(0,0,0,0) 0%);
     }
     @media (prefers-reduced-motion: reduce) {
-      .hero-overlay h1,
-      .hero-overlay h1 .ch { opacity: 1 !important; transition: none; }
+      .hero-overlay h1 { -webkit-mask-image: none; mask-image: none; }
     }
     .hero-overlay h1 em {
       font-style: normal;
@@ -334,16 +335,6 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-    }
-    /* When the title is split into per-letter spans, the gradient/clip must live
-       on each span — child inline text otherwise paints over the parent's clipped
-       gradient with transparent fill and disappears. */
-    .hero-overlay h1 em .ch {
-      background: linear-gradient(135deg, var(--accent), var(--blue));
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      color: transparent;
     }
     .hero-overlay p {
       font-size: 1.0625rem;
@@ -918,7 +909,8 @@
       .explore-bar-link { display: none; }
       .explore-bar-primary { font-size: 0.75rem; padding: 0.4rem 1rem; }
       .hero-banner { margin-top: 4rem; padding: 0 1.5rem; }
-      .hero-overlay { padding: 1.5rem; }
+      .hero-overlay { padding: 1.25rem; }
+      .hero-overlay h1 { font-size: 1.6rem; }
       .hero-image { aspect-ratio: 16 / 9; }
       .tools-grid { grid-template-columns: 1fr; padding: 0 1.5rem 4rem; }
       .hero-product { padding: 7rem 1.5rem 4rem; }
@@ -1656,58 +1648,35 @@ i3xag-server \
     function markSubmitted() {
       try { localStorage.setItem('i3x_dl_submitted', '1'); } catch(e) {}
     }
-    // Reveal the hero title letter-by-letter, left to right, in time with the
-    // video — tracking the triangle that sweeps across the clip. Each character
-    // fades in as the playback "leading edge" passes its position.
+    // Reveal the hero title with a soft left-to-right wipe, synced to the video so
+    // it tracks the triangle sweeping across the clip. Implemented as an animated
+    // CSS mask (not per-letter spans): smooth at 60fps, wraps normally on mobile,
+    // and works on the gradient <em> + iOS Safari.
     (function () {
       var v = document.querySelector('.hero-image video');
       var h = document.querySelector('.hero-overlay h1');
       if (!h) return;
 
-      // Split all text (including inside <em>) into per-character spans, in reading order.
-      var chars = [];
-      (function split(node) {
-        Array.prototype.slice.call(node.childNodes).forEach(function (n) {
-          if (n.nodeType === 3) {
-            var text = n.nodeValue, frag = document.createDocumentFragment();
-            for (var i = 0; i < text.length; i++) {
-              var s = document.createElement('span');
-              s.className = 'ch';
-              s.textContent = text[i];
-              if (text[i] === ' ') s.style.whiteSpace = 'pre';
-              frag.appendChild(s);
-              chars.push(s);
-            }
-            node.replaceChild(frag, n);
-          } else if (n.nodeType === 1) {
-            split(n); // recurse into <em>
-          }
-        });
-      })(h);
-      h.style.opacity = '1';
-
+      var show = function () { h.style.webkitMaskImage = 'none'; h.style.maskImage = 'none'; };
       var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var revealAll = function () { chars.forEach(function (c) { c.style.opacity = '1'; }); };
-      if (reduce || !v) { revealAll(); return; }
+      if (reduce || !v) { show(); return; }
 
-      // FADE is the width of the soft leading edge in letter-units — a wide
-      // feather means several letters are mid-fade at once, so the sweep reads as
-      // a smooth gradient wipe rather than discrete letters popping on.
-      var N = chars.length, START = 0.10, END = 0.88, FADE = 7;
-      var ease = function (t) { return t * t * (3 - 2 * t); }; // smoothstep
+      var START = 0.10, END = 0.88, FEATHER = 18; // FEATHER = soft edge width, in %
+      var setEdge = function (p) {
+        var edge = p * (100 + FEATHER);          // right side of the soft edge (%)
+        var solid = edge - FEATHER;              // left side, fully revealed (%)
+        var g = 'linear-gradient(90deg, #000 ' + solid + '%, rgba(0,0,0,0) ' + edge + '%)';
+        h.style.webkitMaskImage = g;
+        h.style.maskImage = g;
+      };
+      setEdge(0);
 
       var raf = 0;
       var paint = function () {
         raf = 0;
         if (v.duration && isFinite(v.duration)) {
           var p = (v.currentTime / v.duration - START) / (END - START);
-          p = Math.max(0, Math.min(1, p));
-          var lead = p * (N + FADE); // leading edge, in letter units
-          for (var i = 0; i < N; i++) {
-            var o = (lead - i) / FADE;
-            o = o < 0 ? 0 : (o > 1 ? 1 : o);
-            chars[i].style.opacity = String(ease(o));
-          }
+          setEdge(Math.max(0, Math.min(1, p)));
         }
         if (!v.paused && !v.ended) raf = window.requestAnimationFrame(paint);
       };
@@ -1715,11 +1684,11 @@ i3xag-server \
 
       v.addEventListener('play', start);
       v.addEventListener('playing', start);
-      v.addEventListener('ended', revealAll);
-      v.addEventListener('error', revealAll);
+      v.addEventListener('ended', show);
+      v.addEventListener('error', show);
       if (!v.paused) start(); // already autoplaying
       // Fallback: if autoplay is blocked and the video never starts, show the title anyway.
-      setTimeout(function () { if (v.paused && v.currentTime === 0) revealAll(); }, 1500);
+      setTimeout(function () { if (v.paused && v.currentTime === 0) show(); }, 1500);
     })();
 
     function copyMcpEndpoint(btn) {
